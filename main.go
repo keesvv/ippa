@@ -8,40 +8,26 @@ import (
 	"strings"
 )
 
-type AddrFormatter []net.Addr
+type AddrFormatter struct{ ip net.IP }
 
-func (a AddrFormatter) String() string {
-	var rawAddr []string
+func (addr AddrFormatter) String() string {
+	flags := []string{addr.ip.String()}
 
-	for _, addr := range a {
-		var flags []string
-
-		ip, _, err := net.ParseCIDR(addr.String())
-		if err != nil {
-			log.Fatalln(err)
-		}
-
-		if ip.To4() != nil {
-			flags = append(flags, "inet")
-		} else {
-			flags = append(flags, "inet6")
-		}
-
-		if ip.IsPrivate() {
-			flags = append(flags, "private")
-		}
-
-		if ip.IsLoopback() {
-			flags = append(flags, "lo")
-		}
-
-		rawAddr = append(rawAddr, fmt.Sprintf(
-			"  %s %s", ip.String(),
-			strings.Join(flags, " "),
-		))
+	if addr.ip.To4() != nil {
+		flags = append(flags, "inet")
+	} else {
+		flags = append(flags, "inet6")
 	}
 
-	return strings.Join(rawAddr, "\n")
+	if addr.ip.IsPrivate() {
+		flags = append(flags, "private")
+	}
+
+	if addr.ip.IsLoopback() {
+		flags = append(flags, "lo")
+	}
+
+	return strings.Join(flags, " ")
 }
 
 func main() {
@@ -54,12 +40,22 @@ func main() {
 	}
 
 	for _, iface := range ifaces {
+		fmt.Println(iface.Name)
+
 		addrs, err := iface.Addrs()
 		if err != nil {
 			log.Println(err)
 			continue
 		}
 
-		fmt.Printf("%s\n%s\n", iface.Name, AddrFormatter(addrs))
+		for _, addr := range addrs {
+			ip, _, err := net.ParseCIDR(addr.String())
+			if err != nil {
+				log.Println(err)
+				continue
+			}
+
+			fmt.Printf("  %s\n", AddrFormatter{ip})
+		}
 	}
 }
