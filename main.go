@@ -30,13 +30,32 @@ func (addr AddrFormatter) String() string {
 	return strings.Join(flags, " ")
 }
 
+func filterIfaces(filter []string, ifaces []net.Interface) []net.Interface {
+	res := make([]net.Interface, 0)
+
+	for _, f := range filter {
+		for _, iface := range ifaces {
+			if iface.Name == f {
+				res = append(res, iface)
+			}
+		}
+	}
+
+	return res
+}
+
 func main() {
 	log.SetFlags(0)
 	log.SetOutput(os.Stderr)
 
+	filter := os.Args[1:]
 	ifaces, err := net.Interfaces()
 	if err != nil {
 		log.Fatalln(err)
+	}
+
+	if len(filter) > 0 {
+		ifaces = filterIfaces(filter, ifaces)
 	}
 
 	for _, iface := range ifaces {
