@@ -56,7 +56,8 @@ func main() {
 	for _, iface := range ifaces {
 		addrs, err := iface.Addrs()
 		if err != nil {
-			log.Fatalln(err)
+			log.Println(err)
+			continue
 		}
 
 		fmt.Printf("%s\n%s\n", iface.Name, AddrFormatter(addrs))
