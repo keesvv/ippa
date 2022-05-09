@@ -10,24 +10,33 @@ import (
 
 type AddrFormatter struct{ ip net.IP }
 
+type AddrFlag struct {
+	name    string
+	include bool
+}
+
 func (addr AddrFormatter) String() string {
-	flags := []string{addr.ip.String()}
+	var flags []string
 
-	if addr.ip.To4() != nil {
-		flags = append(flags, "inet")
-	} else {
-		flags = append(flags, "inet6")
+	// not using map[string]bool here, maps
+	// are not the right data structure for
+	// this as maps do not indicate order
+	flagMap := []AddrFlag{
+		{"inet", addr.ip.To4() != nil},
+		{"inet6", addr.ip.To4() == nil},
+		{"private", addr.ip.IsPrivate()},
+		{"lo", addr.ip.IsLoopback()},
 	}
 
-	if addr.ip.IsPrivate() {
-		flags = append(flags, "private")
+	for _, flag := range flagMap {
+		if flag.include {
+			flags = append(flags, flag.name)
+		}
 	}
 
-	if addr.ip.IsLoopback() {
-		flags = append(flags, "lo")
-	}
-
-	return strings.Join(flags, " ")
+	return strings.Join(append(
+		[]string{addr.ip.String()}, flags...,
+	), " ")
 }
 
 func filterIfaces(filter []string, ifaces []net.Interface) []net.Interface {
